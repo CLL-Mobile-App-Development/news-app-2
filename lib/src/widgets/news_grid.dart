@@ -1,28 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import './news_grid_item.dart';
 
+import '../providers/news_provider.dart';
+
 class NewsGrid extends StatelessWidget {
-  final List<dynamic> articleList;
-
-  NewsGrid({
-    @required this.articleList,
-  });
-
+  
   @override
   Widget build(BuildContext context) {
+
+    final articleTitles = Provider.of<NewsProvider>(context).titleList;
+
     return GridView.builder(
-      itemCount: articleList.length,
+      itemCount: articleTitles.length,
       itemBuilder: (builderContext, articleIdx) {
         return NewsGridItem(
-          articleUrl: articleList[articleIdx]['url'],
-          author: articleList[articleIdx]['author'],
-          description: articleList[articleIdx]['description'] ??
-              articleList[articleIdx]['content'],
-          imageUrl: articleList[articleIdx]['urlToImage'],
-          publishedBy: articleList[articleIdx]['publishedAt'],
-          source: articleList[articleIdx]['source']['name'],
-          title: articleList[articleIdx]['title'],
+          title: articleTitles[articleIdx],
         );
       },
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(

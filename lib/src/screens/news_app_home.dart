@@ -1,11 +1,10 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
-import '../../environment.dart';
 import '../widgets/side_drawer.dart';
 import '../widgets/news_grid.dart';
+
+import '../providers/news_provider.dart';
 
 class NewsAppHome extends StatefulWidget {
   static String routeName = '/';
@@ -17,6 +16,8 @@ class NewsAppHome extends StatefulWidget {
 class _NewsAppHomeState extends State<NewsAppHome> {
   List<dynamic> news = [];
   bool isLoading = false;
+  bool isFirstLoad = true;
+  bool isRefreshRequest = false;
 
   String _streamName = 'Top-Headlines';
   String _streamUrl = 'https://newsapi.org/v2/top-headlines?country=us';
@@ -36,18 +37,25 @@ class _NewsAppHomeState extends State<NewsAppHome> {
     super.didChangeDependencies();
   }
 
-  Future<Map<String, dynamic>> getNewsStream() async {
-    String url = _streamUrl;
+  Future<void> getNewsStream() async {
+    setState(() {
+      isLoading = true;
+    });
 
-    final getResponse = await http.get(
-      url,
-      headers: {
-        'X-Api-Key': NEWS_API_KEY,
-      },
-    );
+    if (isFirstLoad || isRefreshRequest) {
+      try {
+        await Provider.of<NewsProvider>(context, listen: false)
+            .refreshNewsStream(_streamUrl);
 
-    print('Get response body: ${json.decode(getResponse.body)}');
-    return json.decode(getResponse.body);
+        setState(() {
+          isLoading = false;
+          isFirstLoad = false;
+          isRefreshRequest = false;
+        });
+      } catch (exception) {
+        throw exception;
+      }
+    }
   }
 
   @override
@@ -58,44 +66,53 @@ class _NewsAppHomeState extends State<NewsAppHome> {
           _streamName,
         ),
       ),
-      body: FutureBuilder(
-          future: getNewsStream(),
-          builder: (builderContext, newsStreamSnapshot) {
-            if (newsStreamSnapshot.connectionState == ConnectionState.waiting) {
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-            } else if (newsStreamSnapshot.hasError) {
-              return Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Icon(
-                      Icons.error,
-                      color: Theme.of(context).errorColor,
-                      size: 18,
-                    ),
-                    SizedBox(
-                      width: 5,
-                    ),
-                    Text(
-                      'Error loading news stream !',
-                      style: TextStyle(
-                        color: Theme.of(context).errorColor,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            } else {
-              // Successful request
+      body: (isLoading)
+          ? Center(
+              child: CircularProgressIndicator(),
+            )
+          : RefreshIndicator(
+              onRefresh: () async {
+                isRefreshRequest = true;
+                getNewsStream();
+              },
+              child: FutureBuilder(
+                  future: getNewsStream(),
+                  builder: (builderContext, newsStreamSnapshot) {
+                    if (newsStreamSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    } else if (newsStreamSnapshot.hasError) {
+                      return Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: <Widget>[
+                            Icon(
+                              Icons.error,
+                              color: Theme.of(context).errorColor,
+                              size: 18,
+                            ),
+                            SizedBox(
+                              width: 5,
+                            ),
+                            Text(
+                              'Error loading news stream !',
+                              style: TextStyle(
+                                color: Theme.of(context).errorColor,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      // Successful request
 
-              return NewsGrid(
-                articleList: newsStreamSnapshot.data['articles'],
-              );
-            }
-          }),
+                      return NewsGrid();
+                    }
+                  }),
+            ),
       drawer: SideDrawer(),
     );
   }
