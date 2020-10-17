@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'src/screens/news_app_home.dart';
 
 import 'src/providers/news_provider.dart';
+import 'src/providers/scroll_position_provider.dart';
+import 'src/providers/scroll_attributes_provider.dart';
 
 void main() {
   runApp(NewsApp());
@@ -13,9 +15,26 @@ class NewsApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
           create: (builderContext) => NewsProvider(),
-          child: MaterialApp(
+        ),
+        ChangeNotifierProvider(
+          create: (builderContext) => ScrollPositionProvider(),
+        ),
+        ChangeNotifierProxyProvider<ScrollPositionProvider,
+            ScrollAttributesProvider>(
+          create: (builderContext) => ScrollAttributesProvider(),
+          update: (builderContext, scrollPosProviderInstance,
+              prevScrollAttributesProvider) {
+            return prevScrollAttributesProvider
+              ..storeScrollPosAttributes =
+                  scrollPosProviderInstance.fetchScrollPosition;
+          },
+        ),
+      ],
+      child: MaterialApp(
           title: 'News App',
           theme: ThemeData(
             // This is the theme of your application.

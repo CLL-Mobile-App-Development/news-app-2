@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../widgets/side_drawer.dart';
 import '../widgets/news_grid.dart';
+import '../widgets/scroll_direction_indicator.dart';
 
 import '../providers/news_provider.dart';
+
 
 class NewsAppHome extends StatefulWidget {
   static String routeName = '/';
@@ -60,11 +62,15 @@ class _NewsAppHomeState extends State<NewsAppHome> {
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(
           _streamName,
         ),
+        actions: [
+          ScrollDirectionIndicator(),
+        ],
       ),
       body: (isLoading)
           ? Center(
